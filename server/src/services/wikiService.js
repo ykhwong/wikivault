@@ -165,6 +165,10 @@ async function fetchLangLinksForBatch2(titleBatch, redirects = false, lllang) {
 }
 
 let cachedSuggestedPages = null;
+function getCachedSuggestedPages() {
+  return cachedSuggestedPages;
+}
+
 async function fetchSuggestedPages() {
   try {
     const pagesToFetch = ["Main Page", "Portal:Current events"];
@@ -267,5 +271,5 @@ module.exports = {
   fetchSuggestedPages,
   fetchKoLinks,
   fetchKoTemplateLinks,
-  cachedSuggestedPages
+  getCachedSuggestedPages
 }; 
