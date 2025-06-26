@@ -3,7 +3,7 @@ const axios = require('axios');
 const { APIError } = require('../utils/errors');
 const { getActiveRequests } = require('../utils/requestTracker');
 const { getKeyQueues } = require('../utils/rateLimiter');
-const { cachedSuggestedPages } = require('../services/wikiService');
+const { getCachedSuggestedPages } = require('../services/wikiService');
 const { getFileData } = require('../services/fileService');
 const { serverLogger } = require('../config/logger');
 
@@ -11,6 +11,7 @@ const router = express.Router();
 
 // Recommended pages
 router.get("/get-suggested-pages", (req, res) => {
+  const cachedSuggestedPages = getCachedSuggestedPages();
   if (!cachedSuggestedPages) {
     return res.status(503).json({ error: "Data not ready yet. Please try again later." });
   }
