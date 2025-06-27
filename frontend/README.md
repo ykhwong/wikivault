@@ -13,7 +13,7 @@
 
 4. To load the user script, add the following line to your `Special:MyPage/common.js` file:  
    ```js
-   importScript('User:' + mw.config.get(mw.config.get('wgUserName')) + '/gadget.js');
+   importScript('User:' + mw.config.get('wgUserName') + '/gadget.js');
    ```
 
 ## License
