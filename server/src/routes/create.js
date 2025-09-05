@@ -71,11 +71,11 @@ router.post('/create', async (req, res) => {
         `${CONFIG.API.GEMINI_URL}?key=${apiKey}`,
         {
           safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "OFF" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" },
-            { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "OFF" }
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
           ],
           contents: [{ parts: [{ text: input_data }] }],
           "tools": [
@@ -112,5 +112,6 @@ router.post('/create', async (req, res) => {
     return res.status(status).json({ error: err.message });
   }
 });
+
 
 module.exports = router; 
