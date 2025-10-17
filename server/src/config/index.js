@@ -12,7 +12,7 @@ const CONFIG = {
       : [],
     GEMINI_URL:
       "https://generativelanguage.googleapis.com/v1beta/models/" +
-      "gemini-2.5-flash-preview-05-20:streamGenerateContent",
+      "gemini-2.5-flash:streamGenerateContent",
     WIKI_URL: "https://en.wikipedia.org/w/api.php"
   },
   CORS: {
@@ -76,5 +76,6 @@ const CONFIG = {
     API_CREATE: 'api_create.log'
   }
 };
+
 
 module.exports = CONFIG; 
