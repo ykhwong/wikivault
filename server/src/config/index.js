@@ -13,6 +13,9 @@ const CONFIG = {
     GEMINI_URL:
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       "gemini-3-flash-preview:streamGenerateContent",
+    GEMINI_OLD_URL:
+      "https://generativelanguage.googleapis.com/v1beta/models/" +
+      "gemini-2.5-flash:streamGenerateContent",
     WIKI_URL: "https://en.wikipedia.org/w/api.php"
   },
   CORS: {
@@ -77,6 +80,4 @@ const CONFIG = {
   }
 };
 
-
-module.exports = CONFIG; 
-
+module.exports = CONFIG;
