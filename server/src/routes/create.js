@@ -68,7 +68,7 @@ router.post('/create', async (req, res) => {
 
     const response = await requestWithRateLimiting(apiKey =>
       axios.post(
-        `${CONFIG.API.GEMINI_URL}?key=${apiKey}`,
+        `${CONFIG.API.GEMINI_OLD_URL}?key=${apiKey}`,
         {
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
@@ -113,6 +113,4 @@ router.post('/create', async (req, res) => {
   }
 });
 
-
 module.exports = router; 
-
