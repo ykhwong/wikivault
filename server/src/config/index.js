@@ -41,7 +41,7 @@ const CONFIG = {
     'Bad lead',
     'Bad-lead',
     'Bigpage',
-    'Breaking News ',
+    'Breaking News',
     'Brief Description',
     'Build Lead',
     'Buzzword',
@@ -65,7 +65,7 @@ const CONFIG = {
     'Clean-up categories progress',
     'Clean-up type category',
     'Cleaning tools',
-    'Cleanup ',
+    'Cleanup',
     'Cleanup AfD',
     'Cleanup Button',
     'Cleanup Congress bio',
@@ -600,4 +600,5 @@ const CONFIG = {
 };
 
 module.exports = CONFIG;
+
 
