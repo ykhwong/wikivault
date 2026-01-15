@@ -515,7 +515,6 @@ const CONFIG = {
     'Undersourced',
     'Unr',
     'Unref',
-    'Unref'd',
     'Unrefarticle',
     'Unreferenced Section',
     'Unreferenced article',
@@ -600,5 +599,6 @@ const CONFIG = {
 };
 
 module.exports = CONFIG;
+
 
 
