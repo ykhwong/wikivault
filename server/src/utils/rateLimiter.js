@@ -1,7 +1,7 @@
 const Bottleneck = require("bottleneck");
 const CONFIG = require('../config');
 const { serverLogger } = require('../config/logger');
-const { sanitizeResponseData } = require('./errors');
+const { sanitizeResponseData, readErrorResponseData } = require('./errors');
 
 // --- Bottleneck for key-specific rate-limiting (v2.19.5) ---
 const keyLimiters = CONFIG.API.KEYS.map(key => ({
@@ -23,14 +23,34 @@ async function requestWithRateLimiting(requestFn) {
   try {
     return await slot.limiter.schedule(() => requestFn(slot.key));
   } catch (err) {
-    serverLogger.error('Error in requestWithRateLimiting:', {
+    const is429Error = err.response?.status === 429;
+    const logData = {
       keyIndex: usedKeyIndex,
       message: err.message,
       code: err.code,
       responseStatus: err.response?.status,
       responseData: sanitizeResponseData(err.response?.data),
       stack: err.stack
-    });
+    };
+    
+    // 429 오류인 경우 상세 정보를 추가로 로그에 남김
+    if (is429Error) {
+      // 응답 데이터에서 실제 오류 메시지 읽기
+      const errorResponseData = await readErrorResponseData(err.response?.data);
+      logData.gemini429Error = {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        headers: err.response?.headers,
+        errorMessage: errorResponseData,
+        errorDetails: typeof errorResponseData === 'object' ? errorResponseData : { rawMessage: errorResponseData },
+        requestUrl: err.config?.url,
+        requestMethod: err.config?.method
+      };
+      serverLogger.error('Gemini API 429 Rate Limit Error in requestWithRateLimiting:', logData);
+    } else {
+      serverLogger.error('Error in requestWithRateLimiting:', logData);
+    }
+    
     throw err;
   }
 }

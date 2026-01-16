@@ -1,7 +1,7 @@
 const express = require('express');
 const { StringDecoder } = require('string_decoder');
 const axios = require('axios');
-const { APIError, sanitizeResponseData } = require('../utils/errors');
+const { APIError, sanitizeResponseData, readErrorResponseData } = require('../utils/errors');
 const { hasActiveRequest, startRequest, endRequest } = require('../utils/requestTracker');
 const { requestWithRateLimiting } = require('../utils/rateLimiter');
 const { apiCreateLogger, serverLogger } = require('../config/logger');
@@ -115,7 +115,8 @@ router.post('/create', async (req, res) => {
   } catch (err) {
     endRequest(username);
     const status = err.statusCode || 500;
-    serverLogger.error('Error in create endpoint:', {
+    const is429Error = err.response?.status === 429;
+    const logData = {
       username,
       title,
       endpoint: '/api/create',
@@ -125,7 +126,26 @@ router.post('/create', async (req, res) => {
       responseStatus: err.response?.status,
       responseData: sanitizeResponseData(err.response?.data),
       stack: err.stack
-    });
+    };
+    
+    // 429 오류인 경우 상세 정보를 추가로 로그에 남김
+    if (is429Error) {
+      // 응답 데이터에서 실제 오류 메시지 읽기
+      const errorResponseData = await readErrorResponseData(err.response?.data);
+      logData.gemini429Error = {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        headers: err.response?.headers,
+        errorMessage: errorResponseData,
+        errorDetails: typeof errorResponseData === 'object' ? errorResponseData : { rawMessage: errorResponseData },
+        requestUrl: err.config?.url,
+        requestMethod: err.config?.method
+      };
+      serverLogger.error('Gemini API 429 Rate Limit Error in create endpoint:', logData);
+    } else {
+      serverLogger.error('Error in create endpoint:', logData);
+    }
+    
     return res.status(status).json({ error: err.message });
   }
 });
