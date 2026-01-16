@@ -11,7 +11,7 @@ class APIError extends Error {
 
 /**
  * Reads error response data from stream if it's a stream, otherwise returns the data
- * Used specifically for 429 errors to extract detailed error messages
+ * Used to extract detailed error messages from API error responses
  */
 async function readErrorResponseData(data) {
   if (!data) return null;

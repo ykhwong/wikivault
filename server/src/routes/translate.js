@@ -210,7 +210,6 @@ router.post('/translate', async (req, res) => {
   } catch (err) {
     endRequest(username);
     const status = err.statusCode || 500;
-    const is429Error = err.response?.status === 429;
     const logData = {
       username,
       title,
@@ -223,11 +222,11 @@ router.post('/translate', async (req, res) => {
       stack: err.stack
     };
     
-    // 429 오류인 경우 상세 정보를 추가로 로그에 남김
-    if (is429Error) {
+    // API 응답 오류인 경우 상세 정보를 로그에 남김
+    if (err.response) {
       // 응답 데이터에서 실제 오류 메시지 읽기
       const errorResponseData = await readErrorResponseData(err.response?.data);
-      logData.gemini429Error = {
+      logData.geminiApiError = {
         status: err.response?.status,
         statusText: err.response?.statusText,
         headers: err.response?.headers,
@@ -236,7 +235,7 @@ router.post('/translate', async (req, res) => {
         requestUrl: err.config?.url,
         requestMethod: err.config?.method
       };
-      serverLogger.error('Gemini API 429 Rate Limit Error in translate endpoint:', logData);
+      serverLogger.error('Gemini API Error in translate endpoint:', logData);
     } else {
       serverLogger.error('Error in translate endpoint:', logData);
     }
