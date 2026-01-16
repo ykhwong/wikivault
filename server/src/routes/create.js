@@ -1,10 +1,10 @@
 const express = require('express');
 const { StringDecoder } = require('string_decoder');
 const axios = require('axios');
-const { APIError } = require('../utils/errors');
+const { APIError, sanitizeResponseData } = require('../utils/errors');
 const { hasActiveRequest, startRequest, endRequest } = require('../utils/requestTracker');
 const { requestWithRateLimiting } = require('../utils/rateLimiter');
-const { apiCreateLogger } = require('../config/logger');
+const { apiCreateLogger, serverLogger } = require('../config/logger');
 const CONFIG = require('../config');
 
 const router = express.Router();
@@ -100,7 +100,13 @@ router.post('/create', async (req, res) => {
       endRequest(username);
     });
     response.data.on('error', err => {
-      console.error('Stream error:', err);
+      serverLogger.error('Stream error in create:', {
+        username,
+        title,
+        message: err.message,
+        code: err.code,
+        stack: err.stack
+      });
       res.write('\nevent: error\ndata: Stream processing error\n');
       res.end();
       endRequest(username);
@@ -109,6 +115,17 @@ router.post('/create', async (req, res) => {
   } catch (err) {
     endRequest(username);
     const status = err.statusCode || 500;
+    serverLogger.error('Error in create endpoint:', {
+      username,
+      title,
+      endpoint: '/api/create',
+      status,
+      message: err.message,
+      code: err.code,
+      responseStatus: err.response?.status,
+      responseData: sanitizeResponseData(err.response?.data),
+      stack: err.stack
+    });
     return res.status(status).json({ error: err.message });
   }
 });

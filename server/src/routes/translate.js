@@ -1,10 +1,10 @@
 const express = require('express');
 const { StringDecoder } = require('string_decoder');
 const axios = require('axios');
-const { APIError } = require('../utils/errors');
+const { APIError, sanitizeResponseData } = require('../utils/errors');
 const { hasActiveRequest, startRequest, endRequest } = require('../utils/requestTracker');
 const { requestWithRateLimiting } = require('../utils/rateLimiter');
-const { apiTranslateLogger } = require('../config/logger');
+const { apiTranslateLogger, serverLogger } = require('../config/logger');
 const CONFIG = require('../config');
 const { 
   removeTemplates, 
@@ -101,7 +101,13 @@ router.post('/translate', async (req, res) => {
         const r = await axios.get(kowikiUrl);
         kowikiData = r.data || '';
       } catch (e) {
-        console.error('Error fetching Korean wiki:', e);
+        serverLogger.error('Error fetching Korean wiki:', {
+          url: kowikiUrl,
+          message: e.message,
+          code: e.code,
+          status: e.response?.status,
+          stack: e.stack
+        });
         throw new APIError('Failed to fetch Korean Wikipedia content', 500);
       }
       input_data = 'The following is the content of a specific English Wikipedia article that contains MediaWiki markup. ';
@@ -189,7 +195,13 @@ router.post('/translate', async (req, res) => {
       endRequest(username);
     });
     response.data.on('error', err => {
-      console.error('Stream error:', err);
+      serverLogger.error('Stream error in translate:', {
+        username,
+        title,
+        message: err.message,
+        code: err.code,
+        stack: err.stack
+      });
       res.write('\nevent: error\ndata: Stream processing error\n');
       res.end();
       endRequest(username);
@@ -198,6 +210,17 @@ router.post('/translate', async (req, res) => {
   } catch (err) {
     endRequest(username);
     const status = err.statusCode || 500;
+    serverLogger.error('Error in translate endpoint:', {
+      username,
+      title,
+      endpoint: '/api/translate',
+      status,
+      message: err.message,
+      code: err.code,
+      responseStatus: err.response?.status,
+      responseData: sanitizeResponseData(err.response?.data),
+      stack: err.stack
+    });
     return res.status(status).json({ error: err.message });
   }
 });
@@ -256,11 +279,21 @@ router.post('/fast-translate', async (req, res) => {
 
   } catch (err) {
     const status = err.statusCode || 500;
+    serverLogger.error('Error in fast-translate endpoint:', {
+      username,
+      source,
+      dest,
+      status,
+      message: err.message,
+      code: err.code,
+      responseStatus: err.response?.status,
+      responseData: sanitizeResponseData(err.response?.data),
+      stack: err.stack
+    });
     return res.status(status).json({ error: err.message });
   }
 });
 
 
 module.exports = router; 
-
 

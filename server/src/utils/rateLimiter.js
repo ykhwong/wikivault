@@ -1,5 +1,7 @@
 const Bottleneck = require("bottleneck");
 const CONFIG = require('../config');
+const { serverLogger } = require('../config/logger');
+const { sanitizeResponseData } = require('./errors');
 
 // --- Bottleneck for key-specific rate-limiting (v2.19.5) ---
 const keyLimiters = CONFIG.API.KEYS.map(key => ({
@@ -16,8 +18,21 @@ let currentKeyIndex = 0;
  */
 async function requestWithRateLimiting(requestFn) {
   const slot = keyLimiters[currentKeyIndex];
+  const usedKeyIndex = currentKeyIndex;
   currentKeyIndex = (currentKeyIndex + 1) % keyLimiters.length;
-  return slot.limiter.schedule(() => requestFn(slot.key));
+  try {
+    return await slot.limiter.schedule(() => requestFn(slot.key));
+  } catch (err) {
+    serverLogger.error('Error in requestWithRateLimiting:', {
+      keyIndex: usedKeyIndex,
+      message: err.message,
+      code: err.code,
+      responseStatus: err.response?.status,
+      responseData: sanitizeResponseData(err.response?.data),
+      stack: err.stack
+    });
+    throw err;
+  }
 }
 
 function getKeyQueues() {

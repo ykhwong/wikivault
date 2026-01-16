@@ -10,8 +10,19 @@ if (!fs.existsSync(CONFIG.LOGS.DIR)) {
 
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.printf(({ timestamp, level, message }) => {
-    return `${timestamp} [${level.toUpperCase()}]: ${message}`;
+  winston.format.errors({ stack: true }),
+  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    let logMessage = `${timestamp} [${level.toUpperCase()}]: ${message}`;
+    // If there are additional metadata, stringify them
+    const metaKeys = Object.keys(meta).filter(key => key !== 'timestamp' && key !== 'level' && key !== 'message' && key !== 'splat');
+    if (metaKeys.length > 0) {
+      const metaObj = {};
+      metaKeys.forEach(key => {
+        metaObj[key] = meta[key];
+      });
+      logMessage += ' ' + JSON.stringify(metaObj);
+    }
+    return logMessage;
   })
 );
 
