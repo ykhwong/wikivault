@@ -43,7 +43,7 @@ router.post('/translate', async (req, res) => {
     prompt = removeCategories(prompt);
     prompt = removeItalicsPreserveBold(prompt);
     prompt = prompt.replace(/\[\[\s*Image\s*:/ig, '[[File:');
-    prompt = prompt.replace(/\{\{\s*[\s\S]*?-stub\s*\}\}/g, '');
+    prompt = prompt.replace(/\{\{\s*[ \S]*?-stub\s*\}\}/g, '');
     prompt = cleanupTemplates(prompt, CONFIG.TEMPLATES_TO_CLEANUP);
     let templates = await fetchKoTemplateLinks(title);
     if (templates.length) {
@@ -315,4 +315,5 @@ router.post('/fast-translate', async (req, res) => {
 
 
 module.exports = router; 
+
 
