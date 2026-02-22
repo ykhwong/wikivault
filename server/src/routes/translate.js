@@ -17,6 +17,13 @@ const {
   fetchKoLinks, 
   fetchKoTemplateLinks 
 } = require('../services/wikiService');
+const {
+  fetchCheckPageJSON,
+  fetchUserRights,
+  checkLimit,
+  getTodayKSTDate,
+  incrementAndSaveUsage
+} = require('../services/translateLimitService');
 
 const router = express.Router();
 
@@ -29,6 +36,29 @@ router.post('/translate', async (req, res) => {
   try {
     if (!username || !prompt)
       throw new APIError("Missing required field", 400);
+
+    // Daily limit check (KST, CheckPageJSON + user rights); wikivault_anon is exempt
+    if (username !== 'wikivault_anon') {
+      let limitResult;
+      try {
+        const checkPageConfig = await fetchCheckPageJSON();
+        const userRights = await fetchUserRights(username);
+        limitResult = await checkLimit(checkPageConfig, username, userRights);
+      } catch (limitErr) {
+        serverLogger.warn('Translate daily limit check failed', {
+          username,
+          message: limitErr.message,
+          code: limitErr.code
+        });
+        return res.status(503).json({ error: 'Service unavailable (limit check).' });
+      }
+      if (!limitResult.allowed) {
+        return res.status(limitResult.statusCode).json({
+          error: limitResult.message || 'Access denied or daily limit reached.'
+        });
+      }
+      await incrementAndSaveUsage(getTodayKSTDate(), username);
+    }
 
     if (hasActiveRequest(username))
       throw new APIError(`You have reached the maximum number of active requests (${3}). Please wait for one to complete.`, 429);

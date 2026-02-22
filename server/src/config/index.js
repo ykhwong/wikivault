@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 
 const CONFIG = {
   REQUEST: {
@@ -16,7 +17,10 @@ const CONFIG = {
     GEMINI_OLD_URL:
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       "gemini-2.5-flash:streamGenerateContent",
-    WIKI_URL: "https://en.wikipedia.org/w/api.php"
+    WIKI_URL: "https://en.wikipedia.org/w/api.php",
+    KO_WIKI_URL: "https://ko.wikipedia.org/w/api.php",
+    CHECKPAGE_JSON_URL: "https://ko.wikipedia.org/w/index.php?title=위키백과:도구/WikiVault/CheckPageJSON&action=raw",
+    TRANSLATE_USAGE_FILE: path.join(__dirname, '../../translate_usage.json')
   },
   CORS: {
     ALLOWED_ORIGINS: ["https://ko.wikipedia.org", "https://ko.m.wikipedia.org"]
