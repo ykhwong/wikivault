@@ -109,7 +109,9 @@ function replaceTemplates(prompt, templatesArray) {
   templatesArray.forEach(line => {
       const [from, to] = line.split('\t');
       if (from && to) {
-          templateMap[from.trim().toLowerCase()] = to.trim();
+          if (!from.trim().toLowerCase().startsWith('infobox ')) {
+              templateMap[from.trim().toLowerCase()] = to.trim();
+          }
       }
   });
 
