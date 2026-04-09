@@ -586,7 +586,7 @@ const CONFIG = {
     { "from": ["Cite web"], "to": "웹 인용" },
     { "from": ["Cite news"], "to": "뉴스 인용" },
     { "from": ["Cite book"], "to": "서적 인용" },
-    { "from": ["Cite journal"], "to": "서적 인용" },
+    { "from": ["Cite journal"], "to": "저널 인용" },
     { "from": ["Webarchive"], "to": "웹아카이브" },
     { "from": ["Main"], "to": "본문" },
     { "from": ["See also"], "to": "참고" },
