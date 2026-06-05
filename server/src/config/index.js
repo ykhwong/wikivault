@@ -13,7 +13,7 @@ const CONFIG = {
       : [],
     GEMINI_URL:
       "https://generativelanguage.googleapis.com/v1beta/models/" +
-      "gemini-3-flash-preview:streamGenerateContent",
+      "gemini-3.1-flash-lite:streamGenerateContent",
     GEMINI_OLD_URL:
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       "gemini-2.5-flash:streamGenerateContent",
