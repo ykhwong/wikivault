@@ -626,6 +626,7 @@ const CONFIG = {
     'Unsourced Section',
     'Unsourced',
     'Unverified',
+    'Update after',
     'Update inline',
     'Update section',
     'Update',
