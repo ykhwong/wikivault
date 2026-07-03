@@ -446,6 +446,7 @@ const CONFIG = {
     'Opening',
     'Opinion',
     'Orphan',
+    'Or-section',
     'Other Meanings',
     'Other People',
     'Other Uses Of',
