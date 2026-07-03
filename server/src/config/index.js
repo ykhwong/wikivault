@@ -193,6 +193,8 @@ const CONFIG = {
     'Cs1 Config',
     'Current',
     'Dead Link',
+    'Dead Youtube link',
+    'Dead Youtube links',
     'Default Sort',
     'Defaultsort',
     'Definition needed',
