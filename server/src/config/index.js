@@ -542,6 +542,7 @@ const CONFIG = {
     'Rip',
     'Rs',
     'Rs?',
+    'Says who',
     'Sections',
     'Self-contradictory',
     'Self-published inline',
