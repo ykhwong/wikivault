@@ -36,6 +36,7 @@ const CONFIG = {
     'About',
     'According to whom',
     'According to whom?',
+    'Ad section',
     'Add references',
     'Additional citations for verification',
     'Additional citations',
