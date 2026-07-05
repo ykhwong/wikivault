@@ -673,6 +673,8 @@ const CONFIG = {
     'Verification',
     'Verify credibility',
     'Verify',
+    'Verify source',
+    'Verify sources',
     'Very Few Citations',
     'Very Long',
     'Weasel inline',
