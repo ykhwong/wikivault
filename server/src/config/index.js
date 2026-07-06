@@ -319,6 +319,7 @@ const CONFIG = {
     'Lead Long',
     'Lead Required',
     'Lead Too Short',
+    'Lead too long',
     'Lead improve',
     'Lead inadequate',
     'Lead rewrite',
