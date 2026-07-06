@@ -554,6 +554,7 @@ const CONFIG = {
     'Sections',
     'Self-contradictory',
     'Self-published inline',
+    'Self-published source',
     'Semiprotected',
     'Short Desc',
     'Short Description',
