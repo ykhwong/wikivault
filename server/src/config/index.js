@@ -427,6 +427,7 @@ const CONFIG = {
     'Noreference',
     'Noreferences',
     'Norefs',
+    'Noref section',
     'Nosources',
     'Not English Inline',
     'Not English',
