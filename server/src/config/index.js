@@ -434,6 +434,7 @@ const CONFIG = {
     'Not English',
     'Not Neutral',
     'Not To Be Confused With',
+    'Not in citation',
     'Not verified in body',
     'Not verified',
     'Notability',
