@@ -596,6 +596,7 @@ const CONFIG = {
     'Technical',
     'This Article Is About',
     'This',
+    'Timeframe?',
     'Time needed',
     'Title missing',
     'Toc Limit',
