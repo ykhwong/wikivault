@@ -400,6 +400,7 @@ const CONFIG = {
     'Needs sources',
     'Needs update',
     'Neutral',
+    'New archival link needed',
     'No Context',
     'No Definition',
     'No Footnotes',
