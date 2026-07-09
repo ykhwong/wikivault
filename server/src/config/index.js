@@ -591,6 +591,7 @@ const CONFIG = {
     'Subscription required',
     'Subscription',
     'Subscriptionrequired',
+    'Such as?'
     'Synthesis inline',
     'Synthesis',
     'Synthesis-inline',
