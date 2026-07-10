@@ -212,6 +212,7 @@ const CONFIG = {
     'Dubious',
     'Duplication',
     'Dynamic List',
+    'Elucidate',
     'Engvarb',
     'Essay-Like',
     'Example Needed',
