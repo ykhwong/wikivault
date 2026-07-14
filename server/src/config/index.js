@@ -646,6 +646,7 @@ const CONFIG = {
     'Unreliable Source',
     'Unreliable Source?',
     'Unreliable Sources',
+    'Unreliable sources section',
     'Unreliable medical source',
     'Unrf',
     'Unsorted list',
