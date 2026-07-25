@@ -657,6 +657,7 @@ const CONFIG = {
     'Unverified',
     'Update after',
     'Update inline',
+    'Update needed',
     'Update section',
     'Update',
     'Update-section',
