@@ -269,6 +269,7 @@ const CONFIG = {
     'Good Article',
     'Hatnote',
     'How',
+    'How much',
     'How-To',
     'How?',
     'Huh',
