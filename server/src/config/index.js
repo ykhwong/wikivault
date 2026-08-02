@@ -533,6 +533,7 @@ const CONFIG = {
     'Redirect',
     'Redirect-Distinguish',
     'Ref improve',
+    'Ref section',
     'Ref-improve',
     'Reference Improve',
     'Referenced',
