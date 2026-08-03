@@ -69,6 +69,7 @@ const CONFIG = {
     'Broken anchor',
     'Build Lead',
     'Buzzword',
+    'Buzzword inline',
     'By who',
     'By whom',
     'By whom?',
