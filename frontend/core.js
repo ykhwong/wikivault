@@ -83,22 +83,49 @@ const wikiVaultAuth = (() => {
 	let memorySession = null;
 	let pendingLogin = null;
 
-	// Fingerprint of the current wiki login session.
-	// MediaWiki resets the CSRF token secret on every login, so the fingerprint changes
-	// after logout -> login (in this tab, another tab, or another wiki via CentralAuth).
-	// Only a hash is stored, never the token itself.
-	const getWikiSessionFingerprint = () => {
-		const csrf = mw.user && mw.user.tokens ? mw.user.tokens.get('csrfToken') : null;
-		if (!csrf || csrf === '+\\') return null; // logged out
-		let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
-		for (let i = 0; i < csrf.length; i++) {
-			const ch = csrf.charCodeAt(i);
-			h1 = Math.imul(h1 ^ ch, 2654435761);
-			h2 = Math.imul(h2 ^ ch, 1597334677);
+	// The token is shared by every tab through localStorage, so OAuth runs once per
+	// wiki login and other tabs reuse it until it expires, the server rejects it (401),
+	// the wiki account changes, or the user logs out of the wiki and back in.
+	//
+	// Detecting logout -> login: the CSRF token captured when OAuth finished (wikiCsrf)
+	// is checked with action=checktoken. MediaWiki resets the token secret on every
+	// login, so a token from a previous wiki login comes back "invalid".
+	// (The CSRF string itself cannot be compared directly: it embeds a timestamp and
+	// changes on every page load.)
+	const verifyStatus = new Map();   // session.token -> 'pending' | 'valid' | 'invalid'
+	const verifyPromises = new Map(); // session.token -> Promise<boolean>
+
+	const dropToken = (token) => {
+		if (memorySession && memorySession.token === token) memorySession = null;
+		try {
+			const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+			if (stored && stored.token === token) localStorage.removeItem(STORAGE_KEY);
+		} catch (e) {
+			// ignore
 		}
-		h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-		h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-		return (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16);
+	};
+
+	const verifyWikiSession = (session) => {
+		if (verifyPromises.has(session.token)) return verifyPromises.get(session.token);
+		verifyStatus.set(session.token, 'pending');
+		const check = !session.wikiCsrf
+			? Promise.resolve(false) // saved by an older version: log in once more
+			: Promise.resolve(mw.loader.using('mediawiki.api')).then(() => new mw.Api().get({
+				action: 'checktoken',
+				type: 'csrf',
+				token: session.wikiCsrf,
+				formatversion: 2
+			})).then(
+				(res) => !(res && res.checktoken && res.checktoken.result === 'invalid'),
+				() => true // network/API trouble: don't force a login popup over it
+			);
+		const promise = check.then((valid) => {
+			verifyStatus.set(session.token, valid ? 'valid' : 'invalid');
+			if (!valid) dropToken(session.token);
+			return valid;
+		});
+		verifyPromises.set(session.token, promise);
+		return promise;
 	};
 
 	const isUsable = (session) => {
@@ -107,26 +134,44 @@ const wikiVaultAuth = (() => {
 		// Re-login if the wiki account changed since the token was issued
 		const currentUser = mw.config.get('wgUserName');
 		if (!currentUser || (session.username && session.username !== currentUser)) return false;
-		// Re-login if the user logged out of the wiki and back in since the token was issued
-		const fingerprint = getWikiSessionFingerprint();
-		if (!fingerprint || session.wikiSession !== fingerprint) return false;
+		const currentUserId = mw.config.get('wgUserId');
+		if (session.userId && currentUserId && session.userId !== currentUserId) return false;
 		return true;
 	};
 
+	// Usable session (wiki-login check may still be pending), or null.
 	const readSession = () => {
-		if (isUsable(memorySession)) return memorySession;
-		try {
-			const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-			if (isUsable(stored)) {
-				memorySession = stored;
-				return stored;
+		let session = null;
+		if (isUsable(memorySession)) {
+			session = memorySession;
+		} else {
+			try {
+				const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+				if (isUsable(stored)) {
+					memorySession = stored;
+					session = stored;
+				} else if (stored) {
+					// Stale token (expired, other account, or logged out): drop it
+					localStorage.removeItem(STORAGE_KEY);
+				}
+			} catch (e) {
+				// localStorage unavailable or corrupted; fall through
 			}
-			// Stale token (expired, other account, or previous wiki login): drop it
-			if (stored) localStorage.removeItem(STORAGE_KEY);
-		} catch (e) {
-			// localStorage unavailable or corrupted; fall through
 		}
-		return null;
+		if (!session) return null;
+		const status = verifyStatus.get(session.token);
+		if (status === 'invalid') {
+			dropToken(session.token);
+			return null;
+		}
+		if (!status) verifyWikiSession(session);
+		return session;
+	};
+
+	// Session confirmed to belong to the current wiki login, or null.
+	const readVerifiedSession = () => {
+		const session = readSession();
+		return session && verifyStatus.get(session.token) === 'valid' ? session : null;
 	};
 
 	const saveSession = (session) => {
@@ -178,9 +223,25 @@ const wikiVaultAuth = (() => {
 		let closedTimer = null;
 		const finish = () => {
 			window.removeEventListener('message', onMessage);
+			window.removeEventListener('storage', onStorage);
 			clearInterval(closedTimer);
 			pendingLogin = null;
 		};
+
+		// Another tab finished logging in while this one was waiting: reuse its token.
+		// (Both tabs share the 'wikivault-oauth' popup, so this tab's own message may never arrive.)
+		const onStorage = (event) => {
+			if (event.key !== STORAGE_KEY) return;
+			memorySession = null;
+			const session = readSession();
+			if (!session) return;
+			verifyWikiSession(session).then((valid) => {
+				if (!valid || !pendingLogin || pendingLogin.promise !== promise) return;
+				finish();
+				resolveLogin(session);
+			});
+		};
+		window.addEventListener('storage', onStorage);
 
 		const onMessage = (event) => {
 			if (event.origin !== CONSTANTS.API.MAIN_URI) return;
@@ -195,8 +256,11 @@ const wikiVaultAuth = (() => {
 				token: data.token,
 				exp: data.exp,
 				username: data.username,
-				wikiSession: getWikiSessionFingerprint()
+				userId: mw.config.get('wgUserId') || null,
+				wikiCsrf: mw.user.tokens.get('csrfToken')
 			};
+			verifyStatus.set(session.token, 'valid');
+			verifyPromises.set(session.token, Promise.resolve(true));
 			saveSession(session);
 			resolveLogin(session);
 		};
@@ -218,22 +282,39 @@ const wikiVaultAuth = (() => {
 		return promise;
 	};
 
+	const startLogin = (callback) => {
+		mw.notify('WikiVault를 사용하려면 위키백과 계정으로 로그인해야 합니다. 열린 창에서 승인해 주세요.', { type: 'info' });
+		login().then((session) => {
+			mw.notify(session.username + ' 님으로 WikiVault에 로그인했습니다.', { type: 'success' });
+			callback();
+		}).catch((error) => {
+			mw.notify(error.message, { type: 'error' });
+		});
+	};
+
+	// Start the wiki-login check on page load so it is normally done before the first click
+	readSession();
+
 	return {
-		hasSession: () => readSession() !== null,
+		hasSession: () => readVerifiedSession() !== null,
 		login,
 		logout: clearSession,
 		// Run callback once logged in. Call it directly from a click handler.
 		ensureLogin: (callback) => {
-			if (readSession()) {
+			const session = readSession();
+			if (!session) {
+				startLogin(callback);
+				return;
+			}
+			if (verifyStatus.get(session.token) === 'valid') {
 				callback();
 				return;
 			}
-			mw.notify('WikiVault를 사용하려면 위키백과 계정으로 로그인해야 합니다. 열린 창에서 승인해 주세요.', { type: 'info' });
-			login().then((session) => {
-				mw.notify(session.username + ' 님으로 WikiVault에 로그인했습니다.', { type: 'success' });
-				callback();
-			}).catch((error) => {
-				mw.notify(error.message, { type: 'error' });
+			// Check still running (rare: clicked right after page load). The popup opens
+			// right after it, still within the click's user-activation window.
+			verifyWikiSession(session).then((valid) => {
+				if (valid) callback();
+				else startLogin(callback);
 			});
 		},
 		headers: (extra) => {
