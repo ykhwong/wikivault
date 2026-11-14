@@ -45,7 +45,23 @@ GEMINI_API_KEYS=your_api_key
 GOOGLE_API_KEY=your_google_api_key
 PORT=3000
 NODE_ENV=development
+
+# OAuth 1.0a (consumer registered on Meta-Wiki for ko.wikipedia.org)
+OAUTH_CONSUMER_KEY=your_consumer_key
+OAUTH_CONSUMER_SECRET=your_consumer_secret
+OAUTH_CALLBACK_URL=https://tedbot.toolforge.org/oauth/callback
+# Long random string used to sign WikiVault session tokens (e.g. `openssl rand -hex 32`)
+SESSION_SECRET=change_me
+SESSION_TTL_DAYS=30
+# Set to false only during migration: unauthenticated requests then fall back to the body username
+OAUTH_ENFORCE=true
 ```
+
+### Login (OAuth)
+- `GET /oauth/login?origin=<wiki origin>&state=<random>` - Opened by the gadget in a popup; redirects to `Special:OAuth/authorize`
+- `GET /oauth/callback` - OAuth callback; verifies the user with `Special:OAuth/identify` and passes a signed session token back to the gadget via `postMessage`
+
+`/api/translate`, `/api/fast-translate`, `/api/create` and `/api/get-source-info` require `Authorization: Bearer <session token>`. The username is taken from the token, not from the request body. OAuth access tokens are not stored.
 
 3. Start the server:
 ```bash

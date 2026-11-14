@@ -15,7 +15,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'X-Requested-With', 'Authorization']
 };
 
 const corsMiddleware = cors(corsOptions);

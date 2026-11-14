@@ -23,9 +23,7 @@ router.post('/create', async (req, res) => {
       throw new APIError(`You have reached the maximum number of active requests (${3}). Please wait for one to complete.`, 429);
 
     startRequest(username, endpoint);
-    if (username !== 'wikivault_anon') {
-      apiCreateLogger.info(`Create requested - User: ${username}, Title: ${title}`);
-    }
+    apiCreateLogger.info(`Create requested - User: ${username}, Title: ${title}`);
 
     // Set streaming headers
     res.setHeader('Content-Type', 'text/event-stream');

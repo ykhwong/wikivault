@@ -598,7 +598,7 @@ const CONFIG = {
     'Subscription required',
     'Subscription',
     'Subscriptionrequired',
-    'Such as?'
+    'Such as?',
     'Synthesis inline',
     'Synthesis',
     'Synthesis-inline',
@@ -736,6 +736,29 @@ const CONFIG = {
     { "from": ["Langx"], "to": "llang" },
   ],
   UPDATE_INTERVAL: 3600000,  // 1 hour
+  OAUTH: {
+    // OAuth 1.0a consumer (registered on Meta-Wiki, applicable to ko.wikipedia.org)
+    CONSUMER_KEY: process.env.OAUTH_CONSUMER_KEY || '',
+    CONSUMER_SECRET: process.env.OAUTH_CONSUMER_SECRET || '',
+    // Must start with the callback URL registered for the consumer
+    CALLBACK_URL: process.env.OAUTH_CALLBACK_URL || 'https://tedbot.toolforge.org/oauth/callback',
+    // Special:OAuth/initiate, /token, /identify are called through this index.php
+    INDEX_URL: process.env.OAUTH_INDEX_URL || 'https://ko.wikipedia.org/w/index.php',
+    // Users are sent here to approve the request (central wiki)
+    AUTHORIZE_URL: process.env.OAUTH_AUTHORIZE_URL || 'https://meta.wikimedia.org/wiki/Special:OAuth/authorize',
+    // Expected "iss" of the identify JWT (canonical server of the wiki that served /identify)
+    IDENTIFY_ISSUER: process.env.OAUTH_IDENTIFY_ISSUER || '',
+    // Secret used to sign WikiVault session tokens handed to the gadget
+    SESSION_SECRET: process.env.SESSION_SECRET || '',
+    SESSION_TTL_MS: (parseInt(process.env.SESSION_TTL_DAYS, 10) || 30) * 24 * 60 * 60 * 1000,
+    // Pending login (request token) lifetime
+    PENDING_TTL_MS: 10 * 60 * 1000,
+    MAX_PENDING: 1000,
+    // When true, /api/translate, /api/fast-translate, /api/create and /api/get-source-info
+    // require a valid session token and ignore the username sent in the request body.
+    ENFORCE: process.env.OAUTH_ENFORCE !== 'false',
+    USER_AGENT: 'WikiVault/1.0 (https://tedbot.toolforge.org; OAuth login)'
+  },
   LOGS: {
     DIR: 'log',
     SERVER: 'server.log',

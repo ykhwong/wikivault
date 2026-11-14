@@ -37,36 +37,32 @@ router.post('/translate', async (req, res) => {
     if (!username || !prompt)
       throw new APIError("Missing required field", 400);
 
-    // Daily limit check (KST, CheckPageJSON + user rights); wikivault_anon is exempt
-    if (username !== 'wikivault_anon') {
-      let limitResult;
-      try {
-        const checkPageConfig = await fetchCheckPageJSON();
-        const userRights = await fetchUserRights(username);
-        limitResult = await checkLimit(checkPageConfig, username, userRights);
-      } catch (limitErr) {
-        serverLogger.warn('Translate daily limit check failed', {
-          username,
-          message: limitErr.message,
-          code: limitErr.code
-        });
-        return res.status(503).json({ error: 'Service unavailable (limit check).' });
-      }
-      if (!limitResult.allowed) {
-        return res.status(limitResult.statusCode).json({
-          error: limitResult.message || 'Access denied or daily limit reached.'
-        });
-      }
-      await incrementAndSaveUsage(getTodayKSTDate(), username);
+    // Daily limit check (KST, CheckPageJSON + user rights)
+    let limitResult;
+    try {
+      const checkPageConfig = await fetchCheckPageJSON();
+      const userRights = await fetchUserRights(username);
+      limitResult = await checkLimit(checkPageConfig, username, userRights);
+    } catch (limitErr) {
+      serverLogger.warn('Translate daily limit check failed', {
+        username,
+        message: limitErr.message,
+        code: limitErr.code
+      });
+      return res.status(503).json({ error: 'Service unavailable (limit check).' });
     }
+    if (!limitResult.allowed) {
+      return res.status(limitResult.statusCode).json({
+        error: limitResult.message || 'Access denied or daily limit reached.'
+      });
+    }
+    await incrementAndSaveUsage(getTodayKSTDate(), username);
 
     if (hasActiveRequest(username))
       throw new APIError(`You have reached the maximum number of active requests (${3}). Please wait for one to complete.`, 429);
 
     startRequest(username, endpoint);
-    if (username !== 'wikivault_anon') {
-      apiTranslateLogger.info(`Translation requested - User: ${username}, Title: ${title}`);
-    }
+    apiTranslateLogger.info(`Translation requested - User: ${username}, Title: ${title}`);
 
     // Preprocessing
     prompt = removeTemplates(prompt, CONFIG.TEMPLATES_TO_REMOVE);

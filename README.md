@@ -10,7 +10,7 @@ WikiVault currently supports the following key functionalities:
   Generate accurate translations from English to Korean using advanced AI models.
 
 - **Draft Generation**
-  Quickly create high-quality draft articles in Korean to speed up Wikipedia content creation.
+  Quickly create high-quality draft articles in Korean to speed up Wikipedia content creation. (Currently disabled)
 
 ## Limitations
 
