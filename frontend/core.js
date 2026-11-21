@@ -3120,7 +3120,7 @@ const startTranslation = async (supplement = { enabled: false, title: null }, is
 				if (translationComplete && categoryProcessingComplete) {
 					cleanupTranslation();
 					if (!/^(틀|template):/i.test(title)) {
-						appendReviewTemplate();
+						appendReviewTemplate(title);
 						appendKoreanCategories(koreanCategories);
 					}
 					translatedContent.prop('readonly', false);
@@ -3180,7 +3180,7 @@ const startTranslation = async (supplement = { enabled: false, title: null }, is
 		if (translationComplete && categoryProcessingComplete) {
 			cleanupTranslation();
 			if (!/^(틀|template):/i.test(wikiVaultDocModalTitle.text())) {
-				appendReviewTemplate();
+				appendReviewTemplate(wikiVaultDocModalTitle.text());
 				appendKoreanCategories(koreanCategories);
 			}
 			translatedContent.prop('readonly', false);
@@ -3348,9 +3348,11 @@ const processCategoriesAsync = async (wikiText) => {
 	}
 };
 
-const appendReviewTemplate = () => {
+const appendReviewTemplate = (sourceTitle) => {
 	const currentContent = translatedContent.val();
-	translatedContent.val(currentContent + '\n{{WikiVault 번역 검토 필요}}\n');
+	const title = (sourceTitle || '').trim();
+	const param = title ? `|번역된 원문=:en:${title}` : '';
+	translatedContent.val(currentContent + `\n{{WikiVault 번역 검토 필요${param}}}\n`);
 };
 
 const appendKoreanCategories = (categories) => {
@@ -3487,7 +3489,8 @@ const showSaveDialog = () => {
 				new OO.ui.RadioOptionWidget({
 					data: 'main',
 					label: '일반 문서로 등재',
-					id: 'wikivault-radio-main'
+					id: 'wikivault-radio-main',
+					disabled: true // Temporarily disabled
 				}),
 				new OO.ui.RadioOptionWidget({
 					data: 'subpage',
@@ -3574,7 +3577,7 @@ const showSaveDialog = () => {
 				this.interwikiTitleInput.setDisabled(true);
 			}
 		});
-		this.radioSelect.selectItemByData('main');
+		this.radioSelect.selectItemByData('subpage');
 
 		const layout = new OO.ui.FieldsetLayout({
 			items: [
