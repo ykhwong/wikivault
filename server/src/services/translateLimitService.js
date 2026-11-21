@@ -11,7 +11,7 @@ let usageFileLock = Promise.resolve();
 
 /**
  * Fetch and parse CheckPageJSON from Korean Wikipedia.
- * @returns {Promise<object>} Parsed config (settings, max_calls_per_day, blocklist)
+ * @returns {Promise<object>} Parsed config ({ settings: { tiers, default_max_calls_per_day }, blocklist })
  * @throws {Error} On network or parse failure
  */
 async function fetchCheckPageJSON() {
@@ -112,8 +112,70 @@ async function incrementAndSaveUsage(date, username) {
   await usageFileLock;
 }
 
-/** Tier keys in priority order for max_calls_per_day */
-const LIMIT_TIERS = ['extendedconfirmed', 'confirmed', 'autoconfirmed'];
+/**
+ * Normalize a max_calls_per_day value.
+ * null / -1 => Infinity (unlimited). Non-negative number => floored integer.
+ * Anything else (missing, invalid) => 0 (deny), logged as a warning.
+ * @param {*} raw
+ * @param {string} label - For logging
+ * @returns {number}
+ */
+function normalizeLimit(raw, label) {
+  if (raw === null || raw === -1 || raw === '-1') return Infinity;
+  const n = Number(raw);
+  if (raw !== undefined && raw !== '' && Number.isFinite(n) && n >= 0) {
+    return Math.floor(n);
+  }
+  serverLogger.warn('CheckPageJSON invalid max_calls_per_day; treating as 0', { label, value: raw });
+  return 0;
+}
+
+/**
+ * Normalize CheckPageJSON settings.tiers into a predictable shape.
+ * @param {object} settings
+ * @returns {{ name: string, limit: number, groups: string[], users: string[] }[]}
+ */
+function normalizeTiers(settings) {
+  const tiers = Array.isArray(settings.tiers) ? settings.tiers : [];
+  return tiers
+    .filter((t) => t && typeof t === 'object')
+    .map((t, i) => {
+      const name = t.name ? String(t.name) : `tier_${i}`;
+      return {
+        name,
+        limit: normalizeLimit(t.max_calls_per_day, name),
+        groups: Array.isArray(t.groups) ? t.groups.map((g) => String(g).trim().toLowerCase()) : [],
+        users: Array.isArray(t.users) ? t.users.map((u) => String(u).trim()) : []
+      };
+    });
+}
+
+/**
+ * Resolve the tier for a user.
+ * 1) A tier that lists the user explicitly in `users` wins (first such tier in array order).
+ * 2) Otherwise, the first tier (array order) whose `groups` intersect the user's groups/rights.
+ * 3) Otherwise, settings.default_max_calls_per_day (missing => 0).
+ * @param {object} settings
+ * @param {string} username
+ * @param {string[]} userRights - Lowercase groups/rights
+ * @returns {{ name: string, limit: number }}
+ */
+function resolveTier(settings, username, userRights) {
+  const tiers = normalizeTiers(settings);
+  const name = username.trim();
+
+  const byUser = tiers.find((t) => t.users.includes(name));
+  if (byUser) return byUser;
+
+  const byGroup = tiers.find((t) => t.groups.some((g) => userRights.includes(g)));
+  if (byGroup) return byGroup;
+
+  const hasDefault = Object.prototype.hasOwnProperty.call(settings, 'default_max_calls_per_day');
+  return {
+    name: 'default',
+    limit: hasDefault ? normalizeLimit(settings.default_max_calls_per_day, 'default') : 0
+  };
+}
 
 /**
  * Determine if user is allowed and why not if blocked.
@@ -130,30 +192,12 @@ async function checkLimit(config, username, userRights) {
     return { allowed: false, statusCode: 403, message: 'Access denied (blocklist).' };
   }
 
-  const settings = config.settings || {};
-  const unlimitedGroups = Array.isArray(settings.unlimited_groups) ? settings.unlimited_groups.map((g) => String(g).toLowerCase()) : [];
-  const unlimitedUsers = Array.isArray(settings.unlimited_users) ? settings.unlimited_users.map((u) => String(u).trim()) : [];
-  if (unlimitedGroups.some((g) => userRights.includes(g))) {
+  const settings = config.settings && typeof config.settings === 'object' ? config.settings : {};
+  const tier = resolveTier(settings, username, userRights);
+  if (tier.limit === Infinity) {
     return { allowed: true };
   }
-  if (unlimitedUsers.includes(username.trim())) {
-    return { allowed: true };
-  }
-
-  const maxCalls = config.max_calls_per_day || {};
-  let tier = 'others';
-  for (const t of LIMIT_TIERS) {
-    if (userRights.includes(t.toLowerCase())) {
-      tier = t;
-      break;
-    }
-  }
-  const limitRaw = maxCalls[tier];
-  const limit = limitRaw === -1 || limitRaw === '-1' ? -1 : parseInt(Number(limitRaw), 10);
-  if (limit === -1 || (Number.isNaN(limit) && limitRaw !== 0)) {
-    return { allowed: true };
-  }
-  const effectiveLimit = Number.isNaN(limit) ? 0 : Math.max(0, limit);
+  const effectiveLimit = tier.limit;
 
   const today = getTodayKSTDate();
   const usage = await readUsageFile();
