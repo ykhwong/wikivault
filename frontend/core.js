@@ -340,6 +340,10 @@ const wikiVaultAuth = (() => {
 
 //#region 02. Styles — initializeStyles (CSS)
 
+// Whether to show the copy icon at the bottom-right of text boxes. Set to true to restore it.
+// When false, the icon is hidden and its 35px right padding is not applied either.
+const SHOW_COPY_ICON = false;
+
 const initializeStyles = () => {
 	const styles = `
 		/* Modal Styles */
@@ -822,13 +826,19 @@ const initializeStyles = () => {
 			fill: var(--color-base, #202122); /* Change color on hover */
 		}
 
-		/* Padding for textarea to not hide scrollbar */
+		/* Copy icon disabled via SHOW_COPY_ICON (overrides jQuery .show()) */
+		.wikivault-copy-icon.wikivault-copy-icon-hidden {
+			display: none !important;
+		}
+
+		/* Padding for textarea to not hide scrollbar (only when copy icon is shown) */
+		${SHOW_COPY_ICON ? `
 		.wikivault-doc-modal-edit,
 		.wikivault-writing-content,
 		#wikivault-translated-content,
 		#wikivault-original-content {
 			padding-right: 35px !important; /* Add padding to make space for the icon */
-		}
+		}` : ''}
 
 		/* Cancel Button Styles */
 		.wikivault-cancel-button {
@@ -894,7 +904,7 @@ const initializeStyles = () => {
 		#wikivault-search-results-modal .wikivault-doc-modal-edit {
 			background-color: var(--background-color-base, #fff);
 			color: var(--color-base, #202122);
-			padding-right: 35px !important; /* Ensure padding for copy icon */
+			${SHOW_COPY_ICON ? 'padding-right: 35px !important; /* Ensure padding for copy icon */' : ''}
 		}
 
 		/* Resizable Pane Styles */
@@ -1099,9 +1109,10 @@ const checkKoreanWikiExistence = async (titles) => {
 
 //#region 05. Utilities — Clipboard, editor height adjustment
 
-// Copy icon and clipboard helpers
+// Copy icon and clipboard helpers (SHOW_COPY_ICON is defined in region 02)
 const createCopyIcon = () => {
-    return $('<svg class="wikivault-copy-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+    const hiddenClass = SHOW_COPY_ICON ? '' : ' wikivault-copy-icon-hidden';
+    return $('<svg class="wikivault-copy-icon' + hiddenClass + '" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
         '<path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>' +
         '</svg>');
 };
@@ -5283,7 +5294,7 @@ const showSearchResultsModal = (results) => {
 	  'height': '100%',
 	  'box-sizing': 'border-box',
 	  'resize': 'none',
-	  'padding-right': '35px !important'
+	  ...(SHOW_COPY_ICON ? { 'padding-right': '35px !important' } : {})
 	})
 	.val(results.join('\n'))
 	.appendTo(textareaContainer);
